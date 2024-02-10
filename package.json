@@ -1,0 +1,17 @@
+{
+  "name": "ollama-test-1",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/community": "^0.0.27",
+    "langchain": "^0.1.17"
+  }
+}
