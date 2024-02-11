@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@langchain/community": "^0.0.27",
-    "langchain": "^0.1.17"
+    "dotenv": "^16.4.2",
+    "langchain": "^0.1.17",
+    "mongodb": "^6.3.0"
   }
 }
