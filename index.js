@@ -1,8 +1,19 @@
-import { Ollama } from "@langchain/community/llms/ollama";
+import fs from "fs/promises";
 
-const ollama = new Ollama({
-  baseUrl: "http://localhost:11434", // Default value
-  model: "llama2", // Default value
-});
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
-console.log(await ollama.invoke("Tell me 5 facts about lamas"));
+try {
+  const text = await fs.readFile("./ricettario.txt", "utf-8");
+
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 500,
+    separators: ["\n\n", "\n", " ", "  "],
+    chunkOverlap: 50,
+  });
+
+  const output = await splitter.createDocuments([text]);
+
+  console.log(output);
+} catch (err) {
+  console.log(err);
+}
