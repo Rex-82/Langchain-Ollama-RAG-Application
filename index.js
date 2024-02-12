@@ -2,8 +2,22 @@ import { MongoDBAtlasVectorSearch } from "@langchain/community/vectorstores/mong
 import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
+import fs from "fs";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 dotenv.config();
+
+const text = fs.readFileSync("ricettario.txt", "utf-8");
+
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 500,
+  separators: ["\n\n", "\n", " ", ""],
+  chunkOverlap: 50,
+});
+
+const output = await splitter.createDocuments([text]);
+
+console.log(output);
 
 const client = new MongoClient(process.env.MONGODB_ATLAS_URI || "");
 
@@ -13,12 +27,10 @@ const [dbName, collectionName] = namespace.split(".");
 
 const collection = client.db(dbName).collection(collectionName);
 
-const vectorstore = await MongoDBAtlasVectorSearch.fromTexts(
-  ["Hello world", "Bye bye", "What's this?"],
+const embeddings = new OllamaEmbeddings({ model: "llama2" });
 
-  [{ id: 2 }, { id: 1 }, { id: 3 }],
-
-  new OllamaEmbeddings(),
+const vectorstore = new MongoDBAtlasVectorSearch(
+  embeddings,
 
   {
     collection,
@@ -28,13 +40,27 @@ const vectorstore = await MongoDBAtlasVectorSearch.fromTexts(
   },
 );
 
-const assignedIds = await vectorstore.addDocuments([
-  { pageContent: "upsertable", metadata: {} },
-]);
+const transformedOutput = await Promise.all(
+  output.map(async (doc) => {
+    console.log(`Embedding document`);
 
-const upsertedDocs = [{ pageContent: "overwritten", metadata: {} }];
+    const embedding = await embeddings.embedDocuments([doc.pageContent]);
 
-await vectorstore.addDocuments(upsertedDocs, { ids: assignedIds });
+    console.log(`Document embedded`);
+
+    return {
+      pageContent: doc.pageContent,
+
+      embedding: embedding,
+
+      metadata: {},
+    };
+  }),
+);
+
+console.log(transformedOutput);
+
+await vectorstore.addDocuments(transformedOutput);
 
 await client.close();
 
