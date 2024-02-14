@@ -2,6 +2,7 @@ body {
   font-family: system-ui, sans-serif;
   color: #b1b1b1;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
@@ -92,7 +93,6 @@ body {
   font-size: 1rem;
   font-weight: 500;
   color: #b1b1b1;
-  border: 1px solid;
 }
 
 /* stop ugly scroll bar on some browsers */
@@ -105,12 +105,10 @@ body {
 }
 
 .speech {
-  padding: 1em;
-  max-width: 240px;
-  color: var(--light-text);
-  min-width: 90%;
-  border-radius: var(--border-rad-lg);
-  font-size: 1.07em;
+  padding: 0.5rem;
+  max-width: 80%;
+  color: #b1b1b1;
+  border-radius: 15px;
 }
 
 .speech:first-child {
@@ -118,14 +116,14 @@ body {
 }
 
 .speech-ai {
-  background: #334959;
+  border: 1px solid #b1b1b1;
   border-top-left-radius: 0;
-  margin: 1.2em 1em 0 0;
+  margin: 1.2rem 1rem 0 0;
 }
 
 .speech-human {
-  margin: 1.2em 0 0 1em;
-  background: #2f4f4f;
+  border: 1px solid #495057;
+  margin: 1.2rem 0 0 1rem;
   border-top-right-radius: 0;
 }
 
@@ -137,6 +135,11 @@ body {
 }
 
 #card-input:hover {
+  border-color: #b1b1b1;
+  transition: border-color 0.2s;
+}
+
+#card-input:focus {
   border-color: #b1b1b1;
   transition: border-color 0.2s;
 }
@@ -158,10 +161,6 @@ body {
   box-shadow: none;
 }
 
-.form-control:focus #card-input {
-  border-color: #b1b1b1;
-  transition: border-color 0.2s;
-}
 
 .btn {
   color: #495057;
@@ -170,4 +169,12 @@ body {
   font-size: 1rem;
   font-weight: 500;
   transition: color 0.2s;
+}
+
+#author p,
+#author a {
+  color: #495057;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
 }
