@@ -1,3 +1,5 @@
+// document.addEventListener("DOMContentLoaded", () => {});
+
 document.addEventListener("submit", (e) => {
   e.preventDefault();
   progressConversation();
@@ -18,7 +20,7 @@ async function progressConversation() {
 
     // Add human message
     const newHumanSpeechBubble = document.createElement("div");
-    newHumanSpeechBubble.classList.add("speech", "speech-human");
+    newHumanSpeechBubble.classList.add("speech", "speech-human", "row");
     chatbotConversation.appendChild(newHumanSpeechBubble);
     newHumanSpeechBubble.textContent = question;
     chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
@@ -26,7 +28,7 @@ async function progressConversation() {
     // Add AI message (You need to define `result` somewhere)
     const result = "AI response"; // Example response, replace with your actual response
     const newAiSpeechBubble = document.createElement("div");
-    newAiSpeechBubble.classList.add("speech", "speech-ai");
+    newAiSpeechBubble.classList.add("speech", "speech-ai", "row");
     chatbotConversation.appendChild(newAiSpeechBubble);
     newAiSpeechBubble.textContent = result;
     chatbotConversation.scrollTop = chatbotConversation.scrollHeight;

@@ -88,6 +88,8 @@ body {
 }
 
 .chatbot-conversation-container {
+  display: flex;
+  flex-direction: column;
   border: #343a40;
   height: 10rem;
   font-size: 1rem;
@@ -115,16 +117,20 @@ body {
   margin-top: 0;
 }
 
-.speech-ai {
-  border: 1px solid #b1b1b1;
-  border-top-left-radius: 0;
-  margin: 1.2rem 1rem 0 0;
-}
-
 .speech-human {
+  display: flex;
+  align-self: flex-end;
   border: 1px solid #495057;
   margin: 1.2rem 0 0 1rem;
   border-top-right-radius: 0;
+}
+
+.speech-ai {
+  display: flex;
+  align-self: flex-start;
+  border: 1px solid #b1b1b1;
+  border-top-left-radius: 0;
+  margin: 1.2rem 1rem 0 0;
 }
 
 #card-input {
