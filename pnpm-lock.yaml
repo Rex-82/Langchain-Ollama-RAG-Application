@@ -8,6 +8,9 @@ dependencies:
   '@langchain/community':
     specifier: ^0.0.27
     version: 0.0.27(mongodb@6.3.0)
+  '@langchain/core':
+    specifier: ^0.1.29
+    version: 0.1.29
   dotenv:
     specifier: ^16.4.2
     version: 16.4.2
@@ -294,7 +297,7 @@ packages:
       ws:
         optional: true
     dependencies:
-      '@langchain/core': 0.1.27
+      '@langchain/core': 0.1.29
       '@langchain/openai': 0.0.14
       flat: 5.0.2
       langsmith: 0.0.68
@@ -305,15 +308,15 @@ packages:
       - encoding
     dev: false
 
-  /@langchain/core@0.1.27:
-    resolution: {integrity: sha512-I43G9r2NIs1qTjfU07D6PUGhCfc3anwziqDeoZ4mk2wphVv+8HhAbQNbOSvsuIk2p3qVkjXgxnI9cBFoEdwd0Q==}
+  /@langchain/core@0.1.29:
+    resolution: {integrity: sha512-MVrrb2J1Y08Yy6JnRDy/C/yxZj2PvO6wNkMs8657Q345SHs8iCbRX7Dy7rC69isUrpMjR7PvADFxV9rGvdoMBg==}
     engines: {node: '>=18'}
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.10
-      langsmith: 0.0.68
+      langsmith: 0.1.1
       ml-distance: 4.0.1
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -326,7 +329,7 @@ packages:
     resolution: {integrity: sha512-co6nRylPrLGY/C3JYxhHt6cxLq07P086O7K3QaZH7SFFErIN9wSzJonpvhZR07DEUq6eK6wKgh2ORxA/NcjSRQ==}
     engines: {node: '>=18'}
     dependencies:
-      '@langchain/core': 0.1.27
+      '@langchain/core': 0.1.29
       js-tiktoken: 1.0.10
       openai: 4.27.0
       zod: 3.22.4
@@ -700,7 +703,7 @@ packages:
     dependencies:
       '@anthropic-ai/sdk': 0.9.1
       '@langchain/community': 0.0.27(mongodb@6.3.0)
-      '@langchain/core': 0.1.27
+      '@langchain/core': 0.1.29
       '@langchain/openai': 0.0.14
       binary-extensions: 2.2.0
       expr-eval: 2.0.2
@@ -786,6 +789,17 @@ packages:
 
   /langsmith@0.0.68:
     resolution: {integrity: sha512-bxaJndEhUFDfv5soWKxONrLMZaVZfS+G4smJl3WYQlsEph8ierG3QbJfx1PEwl40TD0aFBjzq62usUX1UOCjuA==}
+    hasBin: true
+    dependencies:
+      '@types/uuid': 9.0.8
+      commander: 10.0.1
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      uuid: 9.0.1
+    dev: false
+
+  /langsmith@0.1.1:
+    resolution: {integrity: sha512-SY1J7Y/hfcRby4ik5b2djvsTTlbJ76Mtl4Q2EDPznSKn+qMPMY2JVb3CroOHpA6qhXK/dGNbRLUz3Kq+mLmMsw==}
     hasBin: true
     dependencies:
       '@types/uuid': 9.0.8
