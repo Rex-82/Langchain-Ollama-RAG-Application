@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 import fs from "fs";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
+import { generateStandaloneQuestion } from "./page/index.js";
+
 dotenv.config();
 
 const text = fs.readFileSync("ricettario.txt", "utf-8");
@@ -41,3 +43,8 @@ console.timeEnd("Document insertion completed in");
 await client.close();
 
 console.log("Done");
+
+console.log("Running template question generation...");
+console.time("Completed in");
+await generateStandaloneQuestion();
+console.timeEnd("Completed in");
