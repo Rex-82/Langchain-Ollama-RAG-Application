@@ -46,5 +46,5 @@ console.log("Done");
 
 console.log("Running template question generation...");
 console.time("Completed in");
-await generateStandaloneQuestion();
+await generateStandaloneQuestion(client);
 console.timeEnd("Completed in");
