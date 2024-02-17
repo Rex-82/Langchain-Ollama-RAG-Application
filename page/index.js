@@ -3,27 +3,70 @@
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
 
-export async function generateStandaloneQuestion() {
-  const llm = new ChatOllama({
-    model: "llama2",
-  });
+import { MongoDBAtlasVectorSearch } from "@langchain/community/vectorstores/mongodb_atlas";
+import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
 
-  const standaloneQuestionTemplate =
-    "Given a question, convert it to a standalone question. question: {question} standalone question:";
+import dotenv from "dotenv";
+dotenv.config();
 
-  const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
-    standaloneQuestionTemplate,
-  );
+export async function generateStandaloneQuestion(client) {
+  try {
+    // Connect the client to the server (optional starting in v4.7)
+    await client.connect();
 
-  const standaloneQuestionChain = standaloneQuestionPrompt.pipe(llm);
+    // Send a ping to confirm a successful connection
+    await client.db("admin").command({ ping: 1 });
 
-  const response = await standaloneQuestionChain.invoke({
-    question:
-      "What are some good february dishes? I would like to make something for my family",
-  });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!",
+    );
+  } finally {
+    const namespace = "langchain.test";
+    const [dbName, collectionName] = namespace.split(".");
+    const collection = client.db(dbName).collection(collectionName);
 
-  console.log(response);
+    console.log("Retrieving documents from MongoDB Atlas collection...");
+    console.time("Document retrieve completed in");
+    const vectorStore = new MongoDBAtlasVectorSearch(new OllamaEmbeddings(), {
+      collection,
+      indexName: "default", // The name of the Atlas search index. Defaults to "default"
+      textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
+      embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
+    });
+
+    const retriever = vectorStore.asRetriever();
+    console.timeEnd("Document retrieve completed in");
+
+    console.log(retriever);
+
+    const llm = new ChatOllama({
+      model: "llama2",
+    });
+
+    const standaloneQuestionTemplate =
+      "Given a question, convert it to a standalone question. question: {question} standalone question:";
+
+    const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
+      standaloneQuestionTemplate,
+    );
+
+    const standaloneQuestionChain = standaloneQuestionPrompt.pipe(llm);
+
+    const response = await standaloneQuestionChain.invoke({
+      question:
+        "What are some good february dishes? I would like to make something for my family",
+    });
+
+    console.log(response);
+
+    const response2 = await retriever.invoke("Tell me about pasta fresca");
+    console.log(response2);
+
+    await client.close();
+    console.log("Done");
+  }
 }
+
 // ---------------- Webpage related code -------------------
 
 // document.addEventListener("DOMContentLoaded", () => {});
