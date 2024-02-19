@@ -1,11 +1,17 @@
 import { MongoDBAtlasVectorSearch } from "@langchain/community/vectorstores/mongodb_atlas";
-import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
+import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import fs from "fs";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-
 import { generateStandaloneQuestion } from "./page/index.js";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { env } from "@xenova/transformers";
+
+// Specify a custom location for models (defaults to '/models/').
+env.localModelPath = "./models/";
+
+// Disable the loading of remote models from the Hugging Face Hub:
+env.allowRemoteModels = false;
 
 dotenv.config();
 
@@ -22,7 +28,7 @@ const output = await splitter.createDocuments([text]);
 console.timeEnd("Text splitting completed in");
 
 const client = new MongoClient(process.env.MONGODB_ATLAS_URI || "");
-const namespace = "langchain.test";
+const namespace = "langchain.hf";
 const [dbName, collectionName] = namespace.split(".");
 const collection = client.db(dbName).collection(collectionName);
 
@@ -30,7 +36,9 @@ console.log("Inserting documents into MongoDB Atlas collection...");
 console.time("Document insertion completed in");
 /* await MongoDBAtlasVectorSearch.fromDocuments(
   output,
-  new OllamaEmbeddings(),
+  new HuggingFaceTransformersEmbeddings({
+    modelName: "all-MiniLM-L6-v2",
+  }),
   {
     collection,
     indexName: "default", // The name of the Atlas search index. Defaults to "default"

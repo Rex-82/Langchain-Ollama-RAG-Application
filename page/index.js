@@ -4,8 +4,16 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
 
 import { MongoDBAtlasVectorSearch } from "@langchain/community/vectorstores/mongodb_atlas";
-import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
+import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+
+import { env } from "@xenova/transformers";
+
+// Specify a custom location for models (defaults to '/models/').
+env.localModelPath = "./models/";
+
+// Disable the loading of remote models from the Hugging Face Hub:
+env.allowRemoteModels = false;
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -22,23 +30,26 @@ export async function generateStandaloneQuestion(client) {
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
   } finally {
-    const namespace = "langchain.test2";
+    const namespace = "langchain.hf";
     const [dbName, collectionName] = namespace.split(".");
     const collection = client.db(dbName).collection(collectionName);
 
     console.log("Retrieving documents from MongoDB Atlas collection...");
     console.time("Document retrieve completed in");
-    const vectorStore = new MongoDBAtlasVectorSearch(new OllamaEmbeddings(), {
-      collection,
-      indexName: "scrimba_index", // The name of the Atlas search index. Defaults to "default"
-      textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
-      embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
-    });
+    const vectorStore = new MongoDBAtlasVectorSearch(
+      new HuggingFaceTransformersEmbeddings({
+        modelName: "all-MiniLM-L6-v2",
+      }),
+      {
+        collection,
+        indexName: "default", // The name of the Atlas search index. Defaults to "default"
+        textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
+        embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
+      },
+    );
 
     const retriever = vectorStore.asRetriever();
     console.timeEnd("Document retrieve completed in");
-
-    console.log(retriever);
 
     const llm = new ChatOllama({
       model: "llama2",
@@ -56,8 +67,7 @@ export async function generateStandaloneQuestion(client) {
       .pipe(new StringOutputParser().pipe(retriever));
 
     const response = await standaloneQuestionChain.invoke({
-      question:
-        "What are the technical requirements for running Scrimba? I only have a very old laptop which is not that powerful.",
+      question: "Tell me about pasta fresca",
     });
 
     console.log(response);
