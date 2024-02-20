@@ -2,10 +2,8 @@
 
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
-
-import { MongoDBAtlasVectorSearch } from "@langchain/community/vectorstores/mongodb_atlas";
-import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { retriever } from "../utils/retriever.js";
 
 import { env } from "@xenova/transformers";
 
@@ -18,63 +16,28 @@ env.allowRemoteModels = false;
 import dotenv from "dotenv";
 dotenv.config();
 
-export async function generateStandaloneQuestion(client) {
-  try {
-    // Connect the client to the server (optional starting in v4.7)
-    await client.connect();
+export async function generateStandaloneQuestion() {
+  const llm = new ChatOllama({
+    model: process.env.CHAT_OLLAMA_MODEL_NAME,
+  });
 
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+  const standaloneQuestionTemplate =
+    "Given a question, convert it to a standalone question. question: {question} standalone question:";
 
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!",
-    );
-  } finally {
-    const namespace = "langchain.hf";
-    const [dbName, collectionName] = namespace.split(".");
-    const collection = client.db(dbName).collection(collectionName);
+  const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
+    standaloneQuestionTemplate,
+  );
 
-    console.log("Retrieving documents from MongoDB Atlas collection...");
-    console.time("Document retrieve completed in");
-    const vectorStore = new MongoDBAtlasVectorSearch(
-      new HuggingFaceTransformersEmbeddings({
-        modelName: "all-MiniLM-L6-v2",
-      }),
-      {
-        collection,
-        indexName: "default", // The name of the Atlas search index. Defaults to "default"
-        textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
-        embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
-      },
-    );
+  const standaloneQuestionChain = standaloneQuestionPrompt
+    .pipe(llm)
+    .pipe(new StringOutputParser().pipe(retriever));
 
-    const retriever = vectorStore.asRetriever();
-    console.timeEnd("Document retrieve completed in");
+  const response = await standaloneQuestionChain.invoke({
+    question: "What are the base requirements?",
+  });
 
-    const llm = new ChatOllama({
-      model: "llama2",
-    });
-
-    const standaloneQuestionTemplate =
-      "Given a question, convert it to a standalone question. question: {question} standalone question:";
-
-    const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
-      standaloneQuestionTemplate,
-    );
-
-    const standaloneQuestionChain = standaloneQuestionPrompt
-      .pipe(llm)
-      .pipe(new StringOutputParser().pipe(retriever));
-
-    const response = await standaloneQuestionChain.invoke({
-      question: "Tell me about pasta fresca",
-    });
-
-    console.log(response);
-
-    await client.close();
-    console.log("Done");
-  }
+  console.log(response);
+  console.log("Done");
 }
 
 // ---------------- Webpage related code -------------------
