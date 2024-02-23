@@ -1,20 +1,23 @@
 // ----------------- Chatbot related code -------------------
 
 import { PromptTemplate } from "@langchain/core/prompts";
-import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import {
+  RunnableSequence,
+  RunnablePassthrough,
+} from "@langchain/core/runnables";
+import { ChatOllama } from "@langchain/community/chat_models/ollama";
+import dotenv from "dotenv";
+import { env as xenova } from "@xenova/transformers";
 import { retriever } from "../utils/retriever.js";
 import { combineDocuments } from "../utils/combineDocuments.js";
 
-import { env } from "@xenova/transformers";
-
 // Specify a custom location for models (defaults to '/models/').
-env.localModelPath = "./models/";
+xenova.localModelPath = "./models/";
 
 // Disable the loading of remote models from the Hugging Face Hub:
-env.allowRemoteModels = false;
+xenova.allowRemoteModels = false;
 
-import dotenv from "dotenv";
 dotenv.config();
 
 export async function generateStandaloneQuestion() {
@@ -36,11 +39,42 @@ answer:`;
 
   const answerPrompt = PromptTemplate.fromTemplate(answerTemplate);
 
-  const standaloneQuestionChain = standaloneQuestionPrompt
-    .pipe(llm)
-    .pipe(new StringOutputParser().pipe(retriever).pipe(combineDocuments));
+  const standaloneQuestionChain = RunnableSequence.from([
+    standaloneQuestionPrompt,
+    llm,
+    new StringOutputParser(),
+  ]);
 
-  const response = await standaloneQuestionChain.invoke({
+  const retrieverChain = RunnableSequence.from([
+    // Takes the previous result (from standalone question's chain)
+    // and pass only the standalone_question string from the object
+    (prevResult) => prevResult.standalone_question,
+    // Passes the string to the retriever which will
+    // return an array of objects matching the query
+    retriever,
+    // Combines the objects in a string
+    combineDocuments,
+  ]);
+
+  const answerChain = RunnableSequence.from([
+    answerPrompt,
+    llm,
+    new StringOutputParser(),
+  ]);
+
+  const chain = RunnableSequence.from([
+    {
+      standalone_question: standaloneQuestionChain,
+      original_input: new RunnablePassthrough(),
+    },
+    {
+      context: retrieverChain,
+      question: ({ original_input }) => original_input.question,
+    },
+    answerChain,
+  ]);
+
+  const response = await chain.invoke({
     question: "How much does the subscription cost?",
   });
 
