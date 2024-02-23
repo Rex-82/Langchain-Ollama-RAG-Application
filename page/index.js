@@ -4,6 +4,7 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { retriever } from "../utils/retriever.js";
+import { combineDocuments } from "../utils/combineDocuments.js";
 
 import { env } from "@xenova/transformers";
 
@@ -28,12 +29,19 @@ export async function generateStandaloneQuestion() {
     standaloneQuestionTemplate,
   );
 
+  const answerTemplate = `You are a helpful and enthusiastic support bot who can answer a given question about Scrimba based on the context provided. Try to find the answer in the context. If you really don't know the answer, say \"I'm sorry, I don't know the answer to that.\" And direct the questioner to email help@scrimba.com. Don't try to make up an answer. Always speak as if you were chatting to a friend.
+context: {context}
+question: {question}
+answer:`;
+
+  const answerPrompt = PromptTemplate.fromTemplate(answerTemplate);
+
   const standaloneQuestionChain = standaloneQuestionPrompt
     .pipe(llm)
-    .pipe(new StringOutputParser().pipe(retriever));
+    .pipe(new StringOutputParser().pipe(retriever).pipe(combineDocuments));
 
   const response = await standaloneQuestionChain.invoke({
-    question: "What are the base requirements?",
+    question: "How much does the subscription cost?",
   });
 
   console.log(response);
