@@ -1,4 +1,4 @@
 node_modules
 models/*
 .env
-scrimba.txt
+src/
