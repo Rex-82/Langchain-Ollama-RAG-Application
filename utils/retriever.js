@@ -1,9 +1,9 @@
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { MongoDBAtlasVectorSearch } from "@langchain/community/vectorstores/mongodb_atlas";
-import { VectorStoreRetriever } from "@langchain/core/vectorstores";
 import dotenv from "dotenv";
-import { Collection, MongoClient } from "mongodb";
 import { connectMongoClient } from "./mongoClient.js";
+import { VectorStoreRetriever } from "@langchain/core/vectorstores";
+import { Collection, MongoClient } from "mongodb";
 
 dotenv.config();
 
@@ -26,6 +26,9 @@ export default async function retrieve() {
     /** @type {string|undefined}*/
     const collectionName = process.env.MONGODB_COLLECTION_NAME;
 
+    /** @type {string|undefined}*/
+    const modelName = process.env.EMBEDDING_HF_MODEL_NAME;
+
     if (!dbName || !collectionName) {
       throw new Error("Error while trying to retrieve documents: DB Env variables not set");
     } else {
@@ -34,10 +37,11 @@ export default async function retrieve() {
 
       console.log("Retrieving documents from MongoDB Atlas collection...");
       console.time("Document retrieve completed in");
+
       /** @type {MongoDBAtlasVectorSearch}*/
       const vectorStore = new MongoDBAtlasVectorSearch(
         new HuggingFaceTransformersEmbeddings({
-          modelName: process.env.EMBEDDING_HF_MODEL_NAME,
+          modelName: modelName,
         }),
         {
           collection,
