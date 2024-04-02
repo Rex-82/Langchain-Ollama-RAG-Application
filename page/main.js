@@ -4,8 +4,8 @@ import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import {
-  RunnablePassthrough,
-  RunnableSequence,
+	RunnablePassthrough,
+	RunnableSequence,
 } from "@langchain/core/runnables";
 import { env as xenova } from "@xenova/transformers";
 import dotenv from "dotenv";
@@ -34,124 +34,129 @@ dotenv.config();
 // 8. Invokes the chain by passing user's question
 // 9. Logs out the response (answers the question)
 
+/**
+ * Function that generates the standalone question used as prompt
+ *
+ * @async
+ * @returns {Promise<void>} Logs the response in console
+ */
 export async function generateStandaloneQuestion() {
-  // Creates the chat model to use (set in the .env file)
-  const llm = new ChatOllama({
-    model: process.env.CHAT_OLLAMA_MODEL_NAME,
-  });
+	// Creates the chat model to use (set in the .env file)
+	const llm = new ChatOllama({
+		model: process.env.CHAT_OLLAMA_MODEL_NAME,
+	});
 
-  // Standalone question template
-  // This is used to tell the model to generate a template given user's question
-  const standaloneQuestionTemplate =
-    "Given a question, convert it to a standalone question. question: {question} standalone question:";
+	// Standalone question template
+	// This is used to tell the model to generate a template given user's question
+	const standaloneQuestionTemplate =
+		"Given a question, convert it to a standalone question. question: {question} standalone question:";
 
-  // Defines question template with variables ({question} in this case)
-  // Note that variables can be specified or inferred
-  // For more info: https://js.langchain.com/docs/modules/model_io/prompts/quick_start#create-a-prompt-template
-  const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
-    standaloneQuestionTemplate,
-  );
+	// Defines question template with variables ({question} in this case)
+	// Note that variables can be specified or inferred
+	// For more info: https://js.langchain.com/docs/modules/model_io/prompts/quick_start#create-a-prompt-template
+	const standaloneQuestionPrompt = PromptTemplate.fromTemplate(
+		standaloneQuestionTemplate,
+	);
 
-  // Answer template
-  // Similarly to the question template. This is used to set the model persona and pass context and question
-  const answerTemplate = `You are a helpful and enthusiastic support bot who can answer a given question about Scrimba based on the context provided. Try to find the answer in the context. If you really don't know the answer, say "I'm sorry, I don't know the answer to that." And direct the questioner to email help@scrimba.com. Don't try to make up an answer. Always speak as if you were chatting to a friend.
+	// Answer template
+	// Similarly to the question template. This is used to set the model persona and pass context and question
+	const answerTemplate = `You are a helpful and enthusiastic support bot who can answer a given question about Scrimba based on the context provided. Try to find the answer in the context. If you really don't know the answer, say "I'm sorry, I don't know the answer to that." And direct the questioner to email help@scrimba.com. Don't try to make up an answer. Always speak as if you were chatting to a friend.
 context: {context}
 question: {question}
 answer:`;
 
-  // Defines answer template with variables
-  const answerPrompt = PromptTemplate.fromTemplate(answerTemplate);
+	// Defines answer template with variables
+	const answerPrompt = PromptTemplate.fromTemplate(answerTemplate);
 
-  console.timeEnd("Template question generation")
+	// Question chain piece
+	// Parses the standalone question as a string
+	// For more info on StringOutputParser: https://js.langchain.com/docs/modules/model_io/output_parsers/types/string
+	const standaloneQuestionChain = RunnableSequence.from([
+		standaloneQuestionPrompt,
+		llm,
+		new StringOutputParser(),
+	]);
 
-  // Question chain piece
-  // Parses the standalone question as a string
-  // For more info on StringOutputParser: https://js.langchain.com/docs/modules/model_io/output_parsers/types/string
-  const standaloneQuestionChain = RunnableSequence.from([
-    standaloneQuestionPrompt,
-    llm,
-    new StringOutputParser(),
-  ]);
+	// Retriever chain piece
+	// Takes the question string from the previous chain piece and retrieves matching objects
+	const retrieverChain = RunnableSequence.from([
+		// Takes the previous result (from standalone question's chain)
+		// and pass only the standalone_question string from the object
+		(prevResult) => prevResult.standalone_question,
+		// Passes the string to the retriever which will
+		// return an array of objects matching the query
+		retriever,
+		// Combines the objects in a string
+		combineDocuments,
+	]);
 
-  // Retriever chain piece
-  // Takes the question string from the previous chain piece and retrieves matching objects
-  const retrieverChain = RunnableSequence.from([
-    // Takes the previous result (from standalone question's chain)
-    // and pass only the standalone_question string from the object
-    (prevResult) => prevResult.standalone_question,
-    // Passes the string to the retriever which will
-    // return an array of objects matching the query
-    retriever,
-    // Combines the objects in a string
-    combineDocuments,
-  ]);
+	// Answer chain piece
+	// Parses the answer as a string
+	const answerChain = RunnableSequence.from([
+		answerPrompt,
+		llm,
+		new StringOutputParser(),
+	]);
 
-  // Answer chain piece
-  // Parses the answer as a string
-  const answerChain = RunnableSequence.from([
-    answerPrompt,
-    llm,
-    new StringOutputParser(),
-  ]);
+	// Complete chain
+	// Generates the answer given a question
+	const chain = RunnableSequence.from([
+		{
+			standalone_question: standaloneQuestionChain, // standaloone_question contains the result from the first chain piece
+			original_input: new RunnablePassthrough(), // original_input contains the user's question that will be passed to the answer chain piece
+		},
+		{
+			context: retrieverChain, //
+			question: ({ original_input }) => original_input.question,
+		},
+		answerChain,
+	]);
 
-  // Complete chain
-  // Generates the answer given a question
-  const chain = RunnableSequence.from([
-    {
-      standalone_question: standaloneQuestionChain, // standaloone_question contains the result from the first chain piece
-      original_input: new RunnablePassthrough(), // original_input contains the user's question that will be passed to the answer chain piece
-    },
-    {
-      context: retrieverChain, //
-      question: ({ original_input }) => original_input.question,
-    },
-    answerChain,
-  ]);
+	const response = await chain.invoke({
+		question: "How much does the subscription cost?",
+	});
 
-  const response = await chain.invoke({
-    question: "How much does the subscription cost?",
-  });
-
-  console.log(response);
-  console.log("Done");
+	console.log(response);
+	console.log("Done");
 }
 
 // ---------------- Webpage related code -------------------
 
 // document.addEventListener("DOMContentLoaded", () => {});
-/*
 document.addEventListener("submit", (e) => {
-  e.preventDefault();
-  progressConversation();
+	e.preventDefault();
+	progressConversation();
 });
 
 async function progressConversation() {
-  const userInput = document.getElementById("card-input");
-  const chatbotConversation = document.getElementById(
-    "chatbot-conversation-container",
-  );
-  const question = userInput.value.trim(); // Trim whitespace from input
+	/** @type {any} */ const userInput = document.getElementById("card-input");
+	const chatbotConversation = document.getElementById(
+		"chatbot-conversation-container",
+	);
 
-  if (!question) {
-    // Focus on the input area if textArea is empty
-    userInput.focus();
-  } else {
-    userInput.value = "";
+	if (chatbotConversation) {
+		const question = userInput.value.trim(); // Trim whitespace from input
 
-    // Add human message
-    const newHumanSpeechBubble = document.createElement("div");
-    newHumanSpeechBubble.classList.add("speech", "speech-human", "row");
-    chatbotConversation.appendChild(newHumanSpeechBubble);
-    newHumanSpeechBubble.textContent = question;
-    chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
+		if (!question) {
+			// Focus on the input area if textArea is empty
+			userInput.focus();
+		} else {
+			userInput.value = "";
 
-    // Add AI message
-    const result = "AI response";
-    const newAiSpeechBubble = document.createElement("div");
-    newAiSpeechBubble.classList.add("speech", "speech-ai", "row");
-    chatbotConversation.appendChild(newAiSpeechBubble);
-    newAiSpeechBubble.textContent = result;
-    chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
-  }
+			// Add human message
+			const newHumanSpeechBubble = document.createElement("div");
+			newHumanSpeechBubble.classList.add("speech", "speech-human", "row");
+			chatbotConversation.appendChild(newHumanSpeechBubble);
+			newHumanSpeechBubble.textContent = question;
+			chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
+
+			// Add AI message
+			const result = "AI response";
+			const newAiSpeechBubble = document.createElement("div");
+			newAiSpeechBubble.classList.add("speech", "speech-ai", "row");
+			chatbotConversation.appendChild(newAiSpeechBubble);
+			newAiSpeechBubble.textContent = result;
+			chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
+		}
+	}
 }
-*/
