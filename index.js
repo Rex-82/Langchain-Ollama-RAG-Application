@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import fs from "fs";
+import fs from "node:fs";
 import * as transformers from "@xenova/transformers";
 import { checkCommandArgument } from "./utils/checkLaunchCommand.js";
 import { insertDocument } from "./utils/insertDocument.js";
