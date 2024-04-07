@@ -1,14 +1,10 @@
 import dotenv from "dotenv";
+import express from "express";
 import fs from "node:fs";
 import * as transformers from "@xenova/transformers";
 import { checkCommandArgument } from "./utils/checkLaunchCommand.js";
 import { insertDocument } from "./utils/insertDocument.js";
-import { splitDocument } from "./utils/splitter.js";
-import { generateStandaloneQuestion } from "./page/main.js";
-import {
-	connectMongoClient,
-	disconnectMongoClient,
-} from "./utils/mongoClient.js";
+import { connectMongoClient } from "./utils/mongoClient.js";
 import { docs } from "./utils/loadDocuments.js";
 
 // Specify a custom location for models (defaults to '/models/').
@@ -53,3 +49,22 @@ async function main() {
 }
 
 main();
+
+const app = express();
+
+const options = {
+	index: "./page/index.html",
+};
+
+app.use("/", express.static("page", options));
+
+app.get("/*", (_, res) => {
+	res.redirect("/index.html");
+});
+
+const server = app.listen(8080, () => {
+	const host = server.address().address;
+	const port = server.address().port;
+
+	console.log("app is listening at http://%s:%s", host, port);
+});

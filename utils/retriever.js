@@ -7,7 +7,6 @@ import { Collection, MongoClient } from "mongodb";
 
 dotenv.config();
 
-
 /**
  * Retrieves documents from DB conllection to be used in chain
  *
@@ -17,47 +16,46 @@ dotenv.config();
  * @returns {Promise<VectorStoreRetriever>} Returns vectorized documents
  */
 export default async function retrieve() {
-  try {
-    /** @type {MongoClient}*/
-    const client = await connectMongoClient();
+	try {
+		/** @type {MongoClient}*/
+		const client = await connectMongoClient();
 
-    /** @type {string|undefined}*/
-    const dbName = process.env.MONGODB_DB_NAME;
-    /** @type {string|undefined}*/
-    const collectionName = process.env.MONGODB_COLLECTION_NAME;
+		/** @type {string|undefined}*/
+		const dbName = process.env.MONGODB_DB_NAME;
+		/** @type {string|undefined}*/
+		const collectionName = process.env.MONGODB_COLLECTION_NAME;
 
-    /** @type {string|undefined}*/
-    const modelName = process.env.EMBEDDING_HF_MODEL_NAME;
+		/** @type {string|undefined}*/
+		const modelName = process.env.EMBEDDING_HF_MODEL_NAME;
 
-    if (!dbName || !collectionName) {
-      throw new Error("Error while trying to retrieve documents: DB Env variables not set");
-    } else {
-      /** @type {Collection}*/
-      const collection = client.db(dbName).collection(collectionName);
+		if (!dbName || !collectionName) {
+			throw new Error(
+				"Error while trying to retrieve documents: DB Env variables not set",
+			);
+		}
+		/** @type {Collection}*/
+		const collection = client.db(dbName).collection(collectionName);
 
-      console.log("Retrieving documents from MongoDB Atlas collection...");
-      console.time("Document retrieve completed in");
+		console.log("Retrieving documents from MongoDB Atlas collection...");
+		console.time("Document retrieve completed in");
 
-      /** @type {MongoDBAtlasVectorSearch}*/
-      const vectorStore = new MongoDBAtlasVectorSearch(
-        new HuggingFaceTransformersEmbeddings({
-          modelName: modelName,
-        }),
-        {
-          collection,
-          indexName: "default", // The name of the Atlas search index. Defaults to "default"
-          textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
-          embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
-        },
-      );
+		/** @type {MongoDBAtlasVectorSearch}*/
+		const vectorStore = new MongoDBAtlasVectorSearch(
+			new HuggingFaceTransformersEmbeddings({
+				modelName: modelName,
+			}),
+			{
+				collection,
+				indexName: "default", // The name of the Atlas search index. Defaults to "default"
+				textKey: "text", // The name of the collection field containing the raw content. Defaults to "text"
+				embeddingKey: "embedding", // The name of the collection field containing the embedded text. Defaults to "embedding"
+			},
+		);
 
-      console.timeEnd("Document retrieve completed in");
-      return vectorStore.asRetriever();
-
-    }
-  } catch (e) {
-    console.error("Error while retrieving documents from DB", e);
-    throw e;
-  }
-
+		console.timeEnd("Document retrieve completed in");
+		return vectorStore.asRetriever();
+	} catch (e) {
+		console.error("Error while retrieving documents from DB", e);
+		throw e;
+	}
 }
