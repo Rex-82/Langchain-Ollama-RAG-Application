@@ -1,3 +1,4 @@
+//@ts-check
 // ----------------- Chatbot related code -------------------
 
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
@@ -35,12 +36,13 @@ dotenv.config();
 // 9. Logs out the response (answers the question)
 
 /**
- * Function that generates the standalone question used as prompt
+ * Function that generates an answer by using a standalone question
  *
  * @async
- * @returns {Promise<void>} Logs the response in console
+ * @param {string} question
+ * @returns {Promise<string>} Returns the response of the question
  */
-export async function generateStandaloneQuestion() {
+export async function generateStandaloneQuestion(question) {
 	// Creates the chat model to use (set in the .env file)
 	const llm = new ChatOllama({
 		model: process.env.CHAT_OLLAMA_MODEL_NAME,
@@ -60,7 +62,7 @@ export async function generateStandaloneQuestion() {
 
 	// Answer template
 	// Similarly to the question template. This is used to set the model persona and pass context and question
-	const answerTemplate = `You are a helpful and enthusiastic support bot who can answer a given question about Scrimba based on the context provided. Try to find the answer in the context. If you really don't know the answer, say "I'm sorry, I don't know the answer to that." And direct the questioner to email help@scrimba.com. Don't try to make up an answer. Always speak as if you were chatting to a friend.
+	const answerTemplate = `You are an expert e precise documentation bot who can answer a given question about Javascript based on the context provided. Try to find the answer in the context. If you really don't know the answer, say "I'm sorry, I don't know the answer to that." And direct the questioner to read MDN documentation on the site. Don't try to make up an answer. Always speak as if you were chatting to a programmer. Provide code examples where needed.
 context: {context}
 question: {question}
 answer:`;
@@ -102,7 +104,7 @@ answer:`;
 	// Generates the answer given a question
 	const chain = RunnableSequence.from([
 		{
-			standalone_question: standaloneQuestionChain, // standaloone_question contains the result from the first chain piece
+			standalone_question: standaloneQuestionChain, // standalone_question contains the result from the first chain piece
 			original_input: new RunnablePassthrough(), // original_input contains the user's question that will be passed to the answer chain piece
 		},
 		{
@@ -113,29 +115,27 @@ answer:`;
 	]);
 
 	const response = await chain.invoke({
-		question: "How much does the subscription cost?",
+		question,
 	});
 
-	console.log(response);
-	console.log("Done");
+	return response;
 }
 
 // ---------------- Webpage related code -------------------
 
-// document.addEventListener("DOMContentLoaded", () => {});
+document.addEventListener("DOMContentLoaded", () => {});
 document.addEventListener("submit", (e) => {
 	e.preventDefault();
 	progressConversation();
 });
 
 async function progressConversation() {
-	/** @type {any} */ const userInput = document.getElementById("card-input");
+	const userInput = document.getElementById("card-input");
 	const chatbotConversation = document.getElementById(
 		"chatbot-conversation-container",
 	);
-
 	if (chatbotConversation) {
-		const question = userInput.value.trim(); // Trim whitespace from input
+		/** @type {any} */ const question = userInput.value.trim(); // Trim whitespace from input
 
 		if (!question) {
 			// Focus on the input area if textArea is empty
@@ -150,12 +150,16 @@ async function progressConversation() {
 			newHumanSpeechBubble.textContent = question;
 			chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
 
+			const response = await generateStandaloneQuestion(question);
+
+			console.log(response);
+			console.log("Done");
+
 			// Add AI message
-			const result = "AI response";
 			const newAiSpeechBubble = document.createElement("div");
 			newAiSpeechBubble.classList.add("speech", "speech-ai", "row");
 			chatbotConversation.appendChild(newAiSpeechBubble);
-			newAiSpeechBubble.textContent = result;
+			newAiSpeechBubble.textContent = response;
 			chatbotConversation.scrollTop = chatbotConversation.scrollHeight;
 		}
 	}

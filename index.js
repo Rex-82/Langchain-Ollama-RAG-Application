@@ -9,6 +9,7 @@ import {
 	connectMongoClient,
 	disconnectMongoClient,
 } from "./utils/mongoClient.js";
+import { docs } from "./utils/loadDocuments.js";
 
 // Specify a custom location for models (defaults to '/models/').
 transformers.env.localModelPath = "./models/";
@@ -32,7 +33,7 @@ async function main() {
 		console.info("Running embedding first");
 		console.log("Splitting text document into chunks...");
 		console.time("Text splitting completed in");
-		const output = await splitDocument(text);
+		const output = docs;
 		console.timeEnd("Text splitting completed in");
 
 		const client = await connectMongoClient();
@@ -46,17 +47,9 @@ async function main() {
 		console.log("Inserting documents into MongoDB Atlas collection...");
 		console.time("Document insertion completed in");
 		console.timeEnd("Document insertion completed in");
+		// await disconnectMongoClient();
+		console.log("Done");
 	}
-	console.log("Running template question generation...");
-
-	console.time("Completed in");
-
-	await generateStandaloneQuestion();
-
-	console.timeEnd("Completed in");
-
-	await disconnectMongoClient();
-	console.log("Done");
 }
 
 main();
